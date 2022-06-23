@@ -32,13 +32,7 @@ runs:
    steps:
     - uses: actions/checkout@v2
     
-    - name: Create .env file
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: ./.env.local
-        contents: |
-          echo "${{ secrets.ENV_DATA }}"
-        write-mode: overwrite
+   
          
     - name: Remove node modules
       uses: appleboy/ssh-action@master

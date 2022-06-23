@@ -1,0 +1,74 @@
+name: 'PM2 Deployment'
+description: 'Deploy your nodejs or typescript app with PM2'
+branding:
+  icon: "zap"
+  color: "yellow"
+inputs:
+  build:  
+    required: false
+    default: 'false'
+  host:
+    description: "Remote host"
+    required: true
+  username:
+    description: "Username to login"
+    required: true
+  port:
+    description: "SSH port"
+    required: false
+    default: "22"
+  password:
+    description: "SSH password"
+    required: true
+  remote-path:
+    description: "Remote path where the files are going to be copied"
+    required: true
+  pm2-id:
+      description: "PM2 ID or Name of the process"
+      required: true
+
+runs:
+  using: "composite"
+   steps:
+    - uses: actions/checkout@v2
+    
+    - name: Create .env file
+      uses: DamianReeves/write-file-action@v1.0
+      with:
+        path: ./.env.local
+        contents: |
+          echo "${{ secrets.ENV_DATA }}"
+        write-mode: overwrite
+         
+    - name: Remove node modules
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 22
+        script: |
+          cd /home/bsdev/cubenation-store
+          rm -r node_modules
+    - name: SFTP uploader
+      uses: wangyucode/sftp-upload-action@v1.3.2
+      with:
+        host: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        localDir: "./"
+        remoteDir: "/home/bsdev/cubenation-store"   
+        rm: true
+        
+    - name: Restart App
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 22
+        script: |
+          cd /home/bsdev/cubenation-store
+          export PATH=$PATH:/home/bsdev/.nvm/versions/node/v16.15.1/bin
+          yarn
+          pm2 restart cn
